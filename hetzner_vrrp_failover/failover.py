@@ -163,6 +163,67 @@ class HetznerFailover:
 
         return success
 
+    def detach_alias_ips_from_all_servers(self) -> bool:
+        """
+        Detach configured alias IPs from all servers
+
+        Returns:
+            True if successful, False otherwise
+        """
+        alias_ips = self.config.alias_ips
+
+        if not alias_ips:
+            return True
+
+        try:
+            import ipaddress
+
+            # Get all servers
+            all_servers = self.client.servers.get_all()
+            alias_ips_set = set(alias_ips)
+            
+            for server in all_servers:
+                if not server.private_net:
+                    continue
+
+                # Check each private network on this server
+                for pnet in server.private_net:
+                    current_aliases = pnet.alias_ips or []
+                    if not current_aliases:
+                        continue
+
+                    # Find which configured alias IPs are on this server's network
+                    aliases_to_remove = alias_ips_set.intersection(set(current_aliases))
+                    
+                    if not aliases_to_remove:
+                        continue
+
+                    # Remove the configured alias IPs from this server
+                    remaining_aliases = [ip for ip in current_aliases if ip not in aliases_to_remove]
+
+                    if self.dry_run:
+                        self.logger.info(
+                            f"[DRY RUN] Would remove aliases {', '.join(aliases_to_remove)} "
+                            f"from server {server.id} on network {pnet.network}"
+                        )
+                    else:
+                        self.logger.info(
+                            f"Removing aliases {', '.join(aliases_to_remove)} "
+                            f"from server {server.id} on network {pnet.network}"
+                        )
+                        self.client.servers.change_alias_ips(server, pnet.network, remaining_aliases)
+                        self.logger.info(
+                            f"Successfully removed aliases from server {server.id}"
+                        )
+
+            return True
+
+        except Exception as e:
+            self.logger.error(f"Failed to detach alias IPs: {e}")
+            import traceback
+            self.logger.debug(traceback.format_exc())
+            return False
+
     def assign_alias_ips(self) -> bool:
         """
         Assign alias IPs to this server
@@ -306,7 +367,10 @@ class HetznerFailover:
         self.logger.info("=" * 60)
 
         floating_success = self.assign_all_floating_ips()
-        alias_success = self.assign_alias_ips()
+        
+        # First detach alias IPs from all servers, then assign to this server
+        detach_success = self.detach_alias_ips_from_all_servers()
+        alias_success = detach_success and self.assign_alias_ips()
 
         if floating_success and alias_success:
             self.logger.info("=" * 60)
