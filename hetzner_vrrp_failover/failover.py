@@ -169,40 +169,40 @@ class HetznerFailover:
         try:
             server = self.server
             
-            # Get current alias IPs
-            current_ipv4_aliases = (
-                server.public_net.ipv4.alias_ips if server.public_net.ipv4 else []
-            )
-            current_ipv6_aliases = (
-                server.public_net.ipv6.alias_ips if server.public_net.ipv6 else []
-            )
+            # Get current alias IPs from public_net (hcloud 1.x structure)
+            current_ipv4_aliases = []
+            current_ipv6_aliases = []
             
+            if hasattr(server.public_net, 'alias_ips'):
+                # hcloud 1.x: alias_ips is on public_net directly
+                current_ipv4_aliases = server.public_net.alias_ips or []
+            elif hasattr(server.public_net.ipv4, 'alias_ips'):
+                # hcloud 2.x: alias_ips is on ipv4/ipv6 objects
+                current_ipv4_aliases = server.public_net.ipv4.alias_ips or []
+                
             # Separate IPv4 and IPv6 from config
             ipv4_aliases = [ip for ip in alias_ips if ':' not in ip]
             ipv6_aliases = [ip for ip in alias_ips if ':' in ip]
             
             # Merge current and new alias IPs (avoid duplicates)
             all_ipv4_aliases = list(set(current_ipv4_aliases + ipv4_aliases))
-            all_ipv6_aliases = list(set(current_ipv6_aliases + ipv6_aliases))
             
             # Calculate what would be added
             new_ipv4 = set(all_ipv4_aliases) - set(current_ipv4_aliases)
-            new_ipv6 = set(all_ipv6_aliases) - set(current_ipv6_aliases)
             
             if self.dry_run:
                 if new_ipv4:
                     self.logger.info(f"[DRY RUN] Would add IPv4 aliases: {', '.join(new_ipv4)}")
-                if new_ipv6:
-                    self.logger.info(f"[DRY RUN] Would add IPv6 aliases: {', '.join(new_ipv6)}")
-                if not new_ipv4 and not new_ipv6:
+                if not new_ipv4:
                     self.logger.info("[DRY RUN] All alias IPs already configured")
                 return True
             
-            # Update server with new alias IPs
-            server.update(
-                alias_ips=all_ipv4_aliases if ipv4_aliases else None,
-                alias_ipv6s=all_ipv6_aliases if ipv6_aliases else None
-            )
+            # Use change_alias_ips method for hcloud 1.x
+            if hasattr(self.client.servers, 'change_alias_ips'):
+                self.client.servers.change_alias_ips(server, all_ipv4_aliases)
+            else:
+                # Fallback for hcloud 2.x
+                server.update(alias_ips=all_ipv4_aliases if ipv4_aliases else None)
             
             self.logger.info(f"Successfully assigned alias IPs: {', '.join(alias_ips)}")
             return True
