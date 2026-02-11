@@ -197,12 +197,15 @@ class HetznerFailover:
                     self.logger.info("[DRY RUN] All alias IPs already configured")
                 return True
             
-            # Use change_alias_ips method for hcloud 1.x
-            if hasattr(self.client.servers, 'change_alias_ips'):
-                self.client.servers.change_alias_ips(server, all_ipv4_aliases)
-            else:
-                # Fallback for hcloud 2.x
-                server.update(alias_ips=all_ipv4_aliases if ipv4_aliases else None)
+            # Use direct API call for public alias IPs (hcloud 1.x doesn't have a method for this)
+            # The change_alias_ips method is only for network alias IPs, not public IPs
+            response = self.client.request(
+                url=f"/servers/{server.id}",
+                method="PUT",
+                json={"public_net": {"alias_ips": all_ipv4_aliases}}
+            )
+            # Reload server to get updated data
+            server = self.client.servers.get_by_id(server.id)
             
             self.logger.info(f"Successfully assigned alias IPs: {', '.join(alias_ips)}")
             return True
