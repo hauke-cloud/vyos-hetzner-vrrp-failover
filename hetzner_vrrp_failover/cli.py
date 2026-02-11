@@ -21,6 +21,9 @@ Examples:
   # Execute failover with default config
   %(prog)s
   
+  # Execute failover with VRRP group (called by VyOS)
+  %(prog)s mygroup
+  
   # Execute failover with custom config
   %(prog)s -c /etc/hetzner-vrrp/config.yaml
   
@@ -58,6 +61,12 @@ Examples:
         '--version',
         action='version',
         version=f'%(prog)s {__version__}'
+    )
+    
+    parser.add_argument(
+        'vrrp_group',
+        nargs='?',
+        help='VRRP group name (passed by VyOS)'
     )
     
     return parser
@@ -140,6 +149,10 @@ def main(argv: Optional[list] = None) -> int:
     try:
         # Load configuration
         config = Config(args.config)
+        
+        # Log VRRP group if provided
+        if args.vrrp_group:
+            print(f"VRRP group: {args.vrrp_group}")
         
         # Create metadata service (or fake it)
         if args.fake_server_id:

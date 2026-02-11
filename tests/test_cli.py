@@ -32,6 +32,20 @@ class TestCLI:
         
         assert args.dry_run is True
     
+    def test_parser_with_vrrp_group(self):
+        """Test parser with VRRP group positional argument"""
+        parser = create_parser()
+        args = parser.parse_args(['mygroup'])
+        
+        assert args.vrrp_group == 'mygroup'
+    
+    def test_parser_without_vrrp_group(self):
+        """Test parser without VRRP group (optional)"""
+        parser = create_parser()
+        args = parser.parse_args([])
+        
+        assert args.vrrp_group is None
+    
     @patch('hetzner_vrrp_failover.cli.HetznerFailover')
     @patch('hetzner_vrrp_failover.cli.Config')
     def test_main_success(self, mock_config, mock_failover, tmp_path):
