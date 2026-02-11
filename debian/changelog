@@ -1,0 +1,9 @@
+hetzner-vrrp-failover (1.0.0-1) stable; urgency=medium
+
+  * Initial release
+  * Hetzner Cloud VRRP failover script for VyOS
+  * Support for floating IP reassignment
+  * Support for alias IP configuration
+  * Configurable via /etc/hetzner-vrrp/config.yaml
+
+ -- Hauke Mettendorf <hauke@mettendorf.it>  Tue, 11 Feb 2025 08:35:00 +0000

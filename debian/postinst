@@ -1,0 +1,15 @@
+#!/bin/bash
+set -e
+
+# Create config directory if it doesn't exist
+if [ ! -d /etc/hetzner-vrrp ]; then
+    mkdir -p /etc/hetzner-vrrp
+    chmod 755 /etc/hetzner-vrrp
+fi
+
+# Set secure permissions on config file if it exists
+if [ -f /etc/hetzner-vrrp/config.yaml ]; then
+    chmod 600 /etc/hetzner-vrrp/config.yaml
+fi
+
+exit 0

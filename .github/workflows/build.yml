@@ -1,0 +1,56 @@
+name: Build and Release DEB Package
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-deb:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y debhelper dh-python python3-all python3-setuptools
+
+      - name: Get package version
+        id: version
+        run: |
+          VERSION=$(dpkg-parsechangelog -S Version)
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Package version: ${VERSION}"
+
+      - name: Build DEB package
+        run: |
+          dpkg-buildpackage -us -uc -b
+          mv ../hetzner-vrrp-failover_*.deb .
+
+      - name: Get DEB filename
+        id: deb_file
+        run: |
+          DEB_FILE=$(ls hetzner-vrrp-failover_*.deb)
+          echo "filename=${DEB_FILE}" >> $GITHUB_OUTPUT
+          echo "DEB package: ${DEB_FILE}"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.deb_file.outputs.filename }}
+          tag_name: ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
