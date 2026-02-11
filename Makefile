@@ -11,7 +11,7 @@ help:
 	@echo "  clean        - Remove generated files"
 
 install:
-	pip install -e .
+	pip install .
 
 install-dev:
 	pip install -e .
