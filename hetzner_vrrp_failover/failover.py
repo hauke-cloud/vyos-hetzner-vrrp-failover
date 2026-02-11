@@ -3,8 +3,8 @@
 import logging
 from typing import List, Optional
 from hcloud import Client
-from hcloud.floating_ips import FloatingIP
-from hcloud.servers import Server
+from hcloud.floating_ips.domain import FloatingIP
+from hcloud.servers.domain import Server
 
 from .config import Config
 from .metadata import MetadataService
