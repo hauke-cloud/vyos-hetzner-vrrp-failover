@@ -88,7 +88,7 @@ def dry_run_validate(failover: HetznerFailover) -> int:
     print(f"Server ID: {failover.server_id}")
     print(f"Log level: {failover.config.log_level}")
     
-    floating_ips = failover.get_floating_ips_by_labels()
+    floating_ips = failover.get_floating_ips()
     print(f"\nFound {len(floating_ips)} floating IP(s) matching labels:")
     
     needs_assignment = []

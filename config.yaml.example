@@ -5,16 +5,16 @@
 hetzner_api_token: "YOUR_API_TOKEN_HERE"
 
 # Floating IPs Configuration
-# Filter floating IPs by labels - only IPs matching ALL labels will be managed
-floating_ip_labels:
-  role: vrrp
-  cluster: production
+# List the floating IP addresses to manage
+floating_ips:
+  - "203.0.113.10"
+  - "203.0.113.20"
 
 # Alias IP Configuration
-# IPv4 or IPv6 addresses to assign to the server
+# IPv4 or IPv6 addresses to assign to private networks
 alias_ips:
-  - "10.0.0.100/32"
-  - "10.0.0.101/32"
+  - "10.0.0.100"
+  - "10.0.0.101"
 
 # Optional: Log file path
 log_file: "/var/log/hetzner-vrrp-failover.log"

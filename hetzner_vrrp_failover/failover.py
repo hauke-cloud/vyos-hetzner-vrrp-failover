@@ -57,9 +57,9 @@ class HetznerFailover:
                 raise HetznerAPIError(f"Failed to get server: {e}")
         return self._server
 
-    def get_floating_ips_by_labels(self) -> List[FloatingIP]:
+    def get_floating_ips(self) -> List[FloatingIP]:
         """
-        Get floating IPs matching configured labels
+        Get floating IPs by IP addresses from config
 
         Returns:
             List of FloatingIP objects
@@ -67,18 +67,37 @@ class HetznerFailover:
         Raises:
             HetznerAPIError: If API request fails
         """
-        labels = self.config.floating_ip_labels
+        ip_list = self.config.floating_ips
 
-        if not labels:
-            self.logger.warning("No floating_ip_labels configured")
+        if not ip_list:
+            self.logger.info("No floating IPs configured")
             return []
 
-        self.logger.info(f"Fetching floating IPs with labels: {labels}")
+        self.logger.info(f"Fetching {len(ip_list)} floating IP(s) from Hetzner API")
 
         try:
-            floating_ips = self.client.floating_ips.get_all(label_selector=labels)
-            self.logger.info(f"Found {len(floating_ips)} floating IPs matching labels")
+            # Get all floating IPs and filter by configured IPs
+            all_floating_ips = self.client.floating_ips.get_all()
+
+            # Create a mapping of IP -> FloatingIP object
+            floating_ips = []
+            found_ips = set()
+
+            for fip in all_floating_ips:
+                if fip.ip in ip_list:
+                    floating_ips.append(fip)
+                    found_ips.add(fip.ip)
+
+            # Warn about any configured IPs that weren't found
+            missing_ips = set(ip_list) - found_ips
+            if missing_ips:
+                self.logger.warning(
+                    f"Floating IPs not found in Hetzner: {', '.join(missing_ips)}"
+                )
+
+            self.logger.info(f"Found {len(floating_ips)} floating IP(s)")
             return floating_ips
+
         except Exception as e:
             raise HetznerAPIError(f"Failed to get floating IPs: {e}")
 
@@ -122,7 +141,7 @@ class HetznerFailover:
         Returns:
             True if all assignments successful, False otherwise
         """
-        floating_ips = self.get_floating_ips_by_labels()
+        floating_ips = self.get_floating_ips()
 
         if not floating_ips:
             self.logger.warning("No floating IPs found to assign")

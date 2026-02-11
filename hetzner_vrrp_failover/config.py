@@ -67,9 +67,9 @@ class Config:
         return self._config['hetzner_api_token']
     
     @property
-    def floating_ip_labels(self) -> Dict[str, str]:
-        """Get floating IP label filters"""
-        return self._config.get('floating_ip_labels', {})
+    def floating_ips(self) -> List[str]:
+        """Get list of floating IPs to manage"""
+        return self._config.get('floating_ips', [])
     
     @property
     def alias_ips(self) -> List[str]:
@@ -89,7 +89,7 @@ class Config:
     def to_dict(self) -> Dict:
         """Export configuration as dictionary (excluding sensitive data)"""
         return {
-            'floating_ip_labels': self.floating_ip_labels,
+            'floating_ips': self.floating_ips,
             'alias_ips': self.alias_ips,
             'log_file': self.log_file,
             'log_level': self.log_level,
